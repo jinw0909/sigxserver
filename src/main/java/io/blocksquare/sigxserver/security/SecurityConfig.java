@@ -47,7 +47,7 @@ public class SecurityConfig {
                 .cors(Customizer.withDefaults())// Disable CSRF for this example; adjust for production as needed.
                     .csrf(AbstractHttpConfigurer::disable)
                     .sessionManagement(session -> session
-                    .sessionCreationPolicy(SessionCreationPolicy.ALWAYS)
+                    .sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED)
                         .sessionFixation().newSession()
                         .maximumSessions(1)
                         .maxSessionsPreventsLogin(false)
