@@ -3,6 +3,7 @@ package io.blocksquare.sigxserver.entity;
 import jakarta.persistence.*;
 import lombok.Data;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Entity
@@ -17,6 +18,8 @@ public class WalletUser {
 
     @Column(unique = true)
     private String publicKey;
+
+    private BigDecimal sigx;
 
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;

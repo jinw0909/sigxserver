@@ -1,19 +1,22 @@
 package io.blocksquare.sigxserver.security;
 
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.security.servlet.PathRequest;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.ProviderManager;
 import org.springframework.security.config.Customizer;
-import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
-import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.config.annotation.web.configuration.WebSecurityCustomizer;
+import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.security.web.context.DelegatingSecurityContextRepository;
+import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
+import org.springframework.security.web.context.RequestAttributeSecurityContextRepository;
 
 import java.util.List;
 
@@ -30,7 +33,7 @@ public class SecurityConfig {
     }
 
     @Bean
-    public SecurityFilterChain filterChain(HttpSecurity http, AuthenticationManager authenticationManager, WalletAuthenticationSuccessHandler walletAuthenticationSuccessHandler) throws Exception {
+    public SecurityFilterChain filterChain(HttpSecurity http, AuthenticationManager authenticationManager, WalletAuthenticationSuccessHandler walletAuthenticationSuccessHandler, PhantomAuthenticationSuccessHandler phantomAuthenticationSuccessHandler) throws Exception {
 //        AuthenticationManager authenticationManager = authenticationConfiguration.getAuthenticationManager();
         // Retrieve the fully built shared AuthenticationManager from HttpSecurity
         //AuthenticationManager authenticationManager = http.getSharedObject(AuthenticationManager.class);
@@ -38,13 +41,13 @@ public class SecurityConfig {
         WalletAuthenticationFilter walletFilter = new WalletAuthenticationFilter("/auth/wallet", authenticationManager);
         walletFilter.setAuthenticationSuccessHandler(walletAuthenticationSuccessHandler);
         PhantomAuthenticationFilter phantomFilter = new PhantomAuthenticationFilter("/auth/phantom", authenticationManager);
-        phantomFilter.setAuthenticationSuccessHandler(walletAuthenticationSuccessHandler);
+        phantomFilter.setAuthenticationSuccessHandler(phantomAuthenticationSuccessHandler);
 
         http
-                .cors(Customizer.withDefaults())
-                .csrf(csrf -> csrf.disable()) // Disable CSRF for this example; adjust for production as needed.
-                .sessionManagement(session -> session
-                        .sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED)
+                .cors(Customizer.withDefaults())// Disable CSRF for this example; adjust for production as needed.
+                    .csrf(AbstractHttpConfigurer::disable)
+                    .sessionManagement(session -> session
+                    .sessionCreationPolicy(SessionCreationPolicy.ALWAYS)
                         .sessionFixation().newSession()
                         .maximumSessions(1)
                         .maxSessionsPreventsLogin(false)
@@ -55,11 +58,23 @@ public class SecurityConfig {
                 .addFilterBefore(walletFilter, UsernamePasswordAuthenticationFilter.class)
                 .addFilterBefore(phantomFilter, UsernamePasswordAuthenticationFilter.class)
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/", "/auth/wallet", "/auth/challenge", "/auth/phantom").permitAll()
-                        .anyRequest().authenticated()
-                );
+
+                        .requestMatchers("/", "/auth/wallet", "/auth/challenge", "/auth/phantom", "/error").permitAll()
+//                        .requestMatchers(PathRequest.toStaticResources().atCommonLocations()).permitAll()
+                                .anyRequest().authenticated()
+
+                )
+                .securityContext((securityContext) -> securityContext
+                .securityContextRepository(new HttpSessionSecurityContextRepository())
+        );
 
         return http.build();
+    }
+
+    @Bean
+    public WebSecurityCustomizer webSecurityCustomizer() {
+        return web -> web.ignoring()
+                .requestMatchers("/error", "/favicon.ico");
     }
 
 
