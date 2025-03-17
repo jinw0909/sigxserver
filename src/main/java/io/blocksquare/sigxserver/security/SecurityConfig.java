@@ -59,7 +59,7 @@ public class SecurityConfig {
                 .addFilterBefore(phantomFilter, UsernamePasswordAuthenticationFilter.class)
                 .authorizeHttpRequests(auth -> auth
 
-                        .requestMatchers("/", "/auth/wallet", "/auth/challenge", "/auth/phantom", "/error").permitAll()
+                        .requestMatchers("/", "/auth/wallet", "/auth/challenge", "/auth/phantom", "/error", "/sendwalletinfo").permitAll()
 //                        .requestMatchers(PathRequest.toStaticResources().atCommonLocations()).permitAll()
                                 .anyRequest().authenticated()
 
