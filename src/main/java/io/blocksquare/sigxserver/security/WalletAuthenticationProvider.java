@@ -1,6 +1,7 @@
 package io.blocksquare.sigxserver.security;
 
 import io.blocksquare.sigxserver.util.SignatureUtil;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.AuthenticationProvider;
@@ -14,10 +15,10 @@ import java.util.Map;
 
 @Component
 @Slf4j
+@RequiredArgsConstructor
 public class WalletAuthenticationProvider implements AuthenticationProvider {
 
-    @Autowired
-    private ChallangeService challangeService;
+    private final ChallangeService challangeService;
 
     @Override
     public Authentication authenticate(Authentication authentication) throws AuthenticationException {

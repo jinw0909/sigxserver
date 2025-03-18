@@ -48,7 +48,7 @@ public class PhantomAuthenticationSuccessHandler implements AuthenticationSucces
         securityContext.setAuthentication(authentication);
         this.securityContextHolderStrategy.setContext(securityContext);
         this.securityContextRepository.saveContext(securityContext, request, response);
-
+        //6D775B42EFA1126E0FCA0D2C59AC9350
         WalletUserDetails userDetails = (WalletUserDetails) authentication.getPrincipal();
         WalletUser walletUser = walletUserRepository.findByPublicKey(userDetails.getPublicKey());
 

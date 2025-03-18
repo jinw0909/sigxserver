@@ -8,24 +8,35 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.ProviderManager;
 import org.springframework.security.config.Customizer;
+import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityCustomizer;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.security.web.authentication.logout.HeaderWriterLogoutHandler;
 import org.springframework.security.web.context.DelegatingSecurityContextRepository;
 import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
 import org.springframework.security.web.context.RequestAttributeSecurityContextRepository;
+import org.springframework.security.web.header.writers.ClearSiteDataHeaderWriter;
+import org.springframework.security.web.session.HttpSessionEventPublisher;
 
 import java.util.List;
+
+import static org.springframework.security.web.header.writers.ClearSiteDataHeaderWriter.Directive.COOKIES;
 
 @Configuration
 @RequiredArgsConstructor
 public class SecurityConfig {
 
     private final WalletAuthenticationProvider walletAuthenticationProvider;
-//    private final PhantomAuthenticationProvider phantomAuthenticationProvider;
+    private final PhantomAuthenticationProvider phantomAuthenticationProvider;
+
+    @Bean
+    public HttpSessionEventPublisher httpSessionEventPublisher() {
+        return new HttpSessionEventPublisher();
+    }
 
     @Bean
     public AuthenticationManager authenticationManager(List<AuthenticationProvider> myAuthenticationProviders) throws Exception {
@@ -35,8 +46,7 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http, AuthenticationManager authenticationManager, WalletAuthenticationSuccessHandler walletAuthenticationSuccessHandler, PhantomAuthenticationSuccessHandler phantomAuthenticationSuccessHandler) throws Exception {
 //        AuthenticationManager authenticationManager = authenticationConfiguration.getAuthenticationManager();
-        // Retrieve the fully built shared AuthenticationManager from HttpSecurity
-        //AuthenticationManager authenticationManager = http.getSharedObject(AuthenticationManager.class);
+
         // Create and configure the custom authentication filter
         WalletAuthenticationFilter walletFilter = new WalletAuthenticationFilter("/auth/wallet", authenticationManager);
         walletFilter.setAuthenticationSuccessHandler(walletAuthenticationSuccessHandler);
@@ -51,18 +61,20 @@ public class SecurityConfig {
                         .sessionFixation().newSession()
                         .maximumSessions(1)
                         .maxSessionsPreventsLogin(false)
-                ) // Enables stateful session management.
-//                .authenticationProvider(walletAuthenticationProvider)
+                )
+                .logout((logout) -> logout
+                .addLogoutHandler(new HeaderWriterLogoutHandler(new ClearSiteDataHeaderWriter(COOKIES)))
+                        .logoutSuccessUrl("/"))
+                // Enables stateful session management.
 //                .authenticationProvider(phantomAuthenticationProvider)
+//                .authenticationProvider(walletAuthenticationProvider)
                 // Insert the custom filter before UsernamePasswordAuthenticationFilter
                 .addFilterBefore(walletFilter, UsernamePasswordAuthenticationFilter.class)
                 .addFilterBefore(phantomFilter, UsernamePasswordAuthenticationFilter.class)
                 .authorizeHttpRequests(auth -> auth
-
-                        .requestMatchers("/", "/auth/wallet", "/auth/challenge", "/auth/phantom", "/error", "/sendwalletinfo").permitAll()
-//                        .requestMatchers(PathRequest.toStaticResources().atCommonLocations()).permitAll()
+                        .requestMatchers("/", "/auth/wallet", "/auth/challenge", "/auth/phantom", "/sendwalletinfo", "/error", "/favicon.ico").permitAll()
+                        .requestMatchers(PathRequest.toStaticResources().atCommonLocations()).permitAll()
                                 .anyRequest().authenticated()
-
                 )
                 .securityContext((securityContext) -> securityContext
                 .securityContextRepository(new HttpSessionSecurityContextRepository())
@@ -70,12 +82,5 @@ public class SecurityConfig {
 
         return http.build();
     }
-
-    @Bean
-    public WebSecurityCustomizer webSecurityCustomizer() {
-        return web -> web.ignoring()
-                .requestMatchers("/error", "/favicon.ico");
-    }
-
 
 }

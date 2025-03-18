@@ -2,11 +2,15 @@ package io.blocksquare.sigxserver.controller;
 
 import io.blocksquare.sigxserver.entity.WalletUser;
 import io.blocksquare.sigxserver.repository.WalletUserRepository;
+import io.blocksquare.sigxserver.security.WalletUserDetails;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
@@ -21,10 +25,16 @@ public class TokenController {
 
     private final WalletUserRepository walletUserRepository;
 
-    @PostMapping("/tokenamount")
-    public BigDecimal getTokenAmount(@RequestBody Map<String, String> requestBody, HttpServletRequest request) {
+    @GetMapping("/tokenamount")
+    public BigDecimal getTokenAmount(HttpServletRequest request) {
 
-        String publicKey = requestBody.get("publicKey");
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null || authentication.isAuthenticated()) {
+            throw new RuntimeException("User is not authenticated");
+        }
+
+        Object principal = authentication.getPrincipal();
+        String publicKey = ((WalletUserDetails) principal).getPublicKey();
 
         // Get the current HTTP session without creating a new one if it doesn't exist
         HttpSession session = request.getSession(false);

@@ -8,7 +8,12 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContext;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.context.SecurityContextHolderStrategy;
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
+import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
+import org.springframework.security.web.context.SecurityContextRepository;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
@@ -22,12 +27,18 @@ public class WalletAuthenticationSuccessHandler implements AuthenticationSuccess
     private final ObjectMapper objectMapper;
     private final WalletUserRepository walletUserRepository;
 
+    private final SecurityContextHolderStrategy securityContextHolderStrategy = SecurityContextHolder.getContextHolderStrategy();
+    private final SecurityContextRepository securityContextRepository = new HttpSessionSecurityContextRepository();
+
     @Override
     public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response, Authentication authentication) throws IOException, ServletException {
+
+        SecurityContext securityContext = this.securityContextHolderStrategy.getContext();
+        securityContext.setAuthentication(authentication);
+        this.securityContextHolderStrategy.setContext(securityContext);
+        this.securityContextRepository.saveContext(securityContext, request, response);
+
         WalletUserDetails userDetails = (WalletUserDetails) authentication.getPrincipal();
-
-        //String role = authentication.getAuthorities().stream().findFirst().map(GrantedAuthority::getAuthority).orElse("ROLE_USER");
-
         WalletUser walletUser = walletUserRepository.findByPublicKey(userDetails.getPublicKey());
 
         try {
