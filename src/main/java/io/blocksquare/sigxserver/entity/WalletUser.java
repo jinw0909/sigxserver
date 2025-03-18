@@ -19,6 +19,7 @@ public class WalletUser {
     @Column(unique = true)
     private String publicKey;
 
+    @Column(precision = 16, scale = 8)
     private BigDecimal sigx;
 
     private LocalDateTime createdAt;

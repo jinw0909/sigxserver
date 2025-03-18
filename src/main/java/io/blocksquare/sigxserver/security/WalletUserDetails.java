@@ -1,11 +1,13 @@
 package io.blocksquare.sigxserver.security;
 
+import lombok.Getter;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
 import java.util.Collection;
 import java.util.List;
 
+@Getter
 public class WalletUserDetails implements UserDetails {
 
     private final String walletName;
@@ -29,14 +31,6 @@ public class WalletUserDetails implements UserDetails {
     @Override
     public String getUsername() {
         return null;
-    }
-
-    public String getWalletName() {
-        return walletName;
-    }
-
-    public String getPublicKey() {
-        return publicKey;
     }
 
     @Override
